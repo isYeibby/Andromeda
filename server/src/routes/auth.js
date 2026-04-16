@@ -5,6 +5,24 @@ const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 export const authRouter = Router();
 
 /**
+ * GET /callback
+ * Spotify redirects the browser here after user authorization.
+ * We forward the code (or error) to the client app for PKCE token exchange.
+ */
+export function callbackHandler(req, res) {
+  const clientUrl = process.env.CLIENT_URL || 'http://127.0.0.1:5173';
+  const { code, error, state } = req.query;
+
+  const params = new URLSearchParams();
+  if (code) params.set('code', code);
+  if (error) params.set('error', error);
+  if (state) params.set('state', state);
+
+  console.log('[AUTH] Spotify callback received, redirecting to client');
+  res.redirect(`${clientUrl}/callback?${params.toString()}`);
+}
+
+/**
  * POST /auth/token
  * Exchange authorization code + code_verifier for access & refresh tokens (PKCE flow)
  */

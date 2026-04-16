@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { authRouter } from './routes/auth.js';
+import { authRouter, callbackHandler } from './routes/auth.js';
 import { apiRouter } from './routes/api.js';
 
 dotenv.config();
@@ -20,6 +20,9 @@ app.use(cors({
 app.get('/health', (_req, res) => {
   res.json({ status: 'online', service: 'VIBE_SYNC_SERVER', timestamp: new Date().toISOString() });
 });
+
+// Spotify OAuth callback (must be at root: /callback)
+app.get('/callback', callbackHandler);
 
 // Routes
 app.use('/auth', authRouter);

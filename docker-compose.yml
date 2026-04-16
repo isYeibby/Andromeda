@@ -27,6 +27,9 @@ services:
       - /app/node_modules
     env_file:
       - .env
+    environment:
+      # Vite dev server proxy target (server-side only, NOT embedded in browser JS)
+      - PROXY_TARGET=http://server:3001
     depends_on:
       - server
     networks:
