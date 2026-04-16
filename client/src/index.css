@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================
+   VIBE_SYNC — Design System
+   Hypergryph FUI / NeoTokyo 90s Aesthetic
+   ============================================= */
+
+@layer base {
+  :root {
+    --color-bg: #020617;
+    --color-surface: #0f172a;
+    --color-border: #1e293b;
+    --color-text: #f8fafc;
+    --color-text-muted: #94a3b8;
+    --color-fuchsia: #d946ef;
+    --color-cyan: #38bdf8;
+    --color-red: #f43f5e;
+    --color-amber: #f59e0b;
+  }
+
+  .light {
+    --color-bg: #f8fafc;
+    --color-surface: #e2e8f0;
+    --color-border: #cbd5e1;
+    --color-text: #0f172a;
+    --color-text-muted: #64748b;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-fuchsia) var(--color-surface);
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-fuchsia);
+    border-radius: 0;
+  }
+
+  ::selection {
+    background: rgba(217, 70, 239, 0.3);
+    color: #f8fafc;
+  }
+}
+
+@layer components {
+  /* === CRT SCANLINE OVERLAY === */
+  .scanlines {
+    position: relative;
+  }
+  .scanlines::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.03) 0px,
+      rgba(0, 0, 0, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* === ANGULAR CLIP PATHS === */
+  .clip-angular {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 16px) 0,
+      100% 16px,
+      100% 100%,
+      16px 100%,
+      0 calc(100% - 16px)
+    );
+  }
+
+  .clip-angular-sm {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 8px) 0,
+      100% 8px,
+      100% 100%,
+      8px 100%,
+      0 calc(100% - 8px)
+    );
+  }
+
+  .clip-angular-lg {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 24px) 0,
+      100% 24px,
+      100% 100%,
+      24px 100%,
+      0 calc(100% - 24px)
+    );
+  }
+
+  /* === NEON GLOW TEXT === */
+  .text-glow-fuchsia {
+    text-shadow: 0 0 10px rgba(217, 70, 239, 0.5),
+                 0 0 30px rgba(217, 70, 239, 0.2);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.5),
+                 0 0 30px rgba(56, 189, 248, 0.2);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 10px rgba(244, 63, 94, 0.5),
+                 0 0 30px rgba(244, 63, 94, 0.2);
+  }
+
+  /* === FUI BORDER FRAME === */
+  .fui-border {
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    position: relative;
+  }
+  .fui-border::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, rgba(217, 70, 239, 0.3), transparent 50%, rgba(56, 189, 248, 0.3)) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* === FUI PANEL === */
+  .fui-panel {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.9));
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(56, 189, 248, 0.15);
+  }
+
+  /* === CORNER BRACKETS (decorative) === */
+  .corner-brackets {
+    position: relative;
+  }
+  .corner-brackets::before,
+  .corner-brackets::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--color-cyan);
+    pointer-events: none;
+  }
+  .corner-brackets::before {
+    top: 0; left: 0;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+  .corner-brackets::after {
+    bottom: 0; right: 0;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
+
+  /* === GLITCH TEXT === */
+  .glitch-text {
+    position: relative;
+  }
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .glitch-text::before {
+    color: var(--color-cyan);
+    animation: glitchTop 3s infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  }
+  .glitch-text::after {
+    color: var(--color-fuchsia);
+    animation: glitchBottom 2.5s infinite;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  }
+
+  /* === PROGRESS BAR === */
+  .progress-bar {
+    appearance: none;
+    height: 4px;
+    background: rgba(56, 189, 248, 0.15);
+    border: none;
+    cursor: pointer;
+    outline: none;
+  }
+  .progress-bar::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--color-fuchsia);
+    cursor: pointer;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  .progress-bar::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--color-fuchsia);
+    cursor: pointer;
+    border: none;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  /* === BUTTON VARIANTS === */
+  .btn-neon {
+    @apply relative overflow-hidden font-mono text-sm tracking-widest uppercase
+           px-6 py-3 transition-all duration-300;
+    background: linear-gradient(135deg, rgba(217, 70, 239, 0.15), rgba(56, 189, 248, 0.15));
+    border: 1px solid rgba(217, 70, 239, 0.4);
+  }
+  .btn-neon:hover {
+    background: linear-gradient(135deg, rgba(217, 70, 239, 0.3), rgba(56, 189, 248, 0.3));
+    border-color: rgba(217, 70, 239, 0.7);
+    box-shadow: 0 0 20px rgba(217, 70, 239, 0.2), 0 0 60px rgba(217, 70, 239, 0.1);
+  }
+  .btn-neon::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transition: left 0.5s;
+  }
+  .btn-neon:hover::after {
+    left: 100%;
+  }
+
+  /* === DATA LABEL (for stats) === */
+  .data-label {
+    @apply text-[10px] font-mono uppercase tracking-[0.2em] text-slate-400;
+  }
+  .data-value {
+    @apply text-lg font-display font-bold;
+  }
+
+  /* === SKELETON LOADER === */
+  .skeleton {
+    @apply relative overflow-hidden bg-slate-mid rounded;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.05), transparent);
+    animation: shimmer 2s infinite;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* === KEYFRAMES === */
+@keyframes glitchTop {
+  0%, 90%, 100% { transform: translate(0); }
+  92% { transform: translate(-3px, -1px); }
+  94% { transform: translate(3px, 1px); }
+  96% { transform: translate(-2px, 0); }
+}
+@keyframes glitchBottom {
+  0%, 88%, 100% { transform: translate(0); }
+  90% { transform: translate(2px, 1px); }
+  93% { transform: translate(-3px, -1px); }
+  96% { transform: translate(1px, 0); }
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* === RECHARTS CUSTOM === */
+.recharts-polar-grid-angle line {
+  stroke: rgba(56, 189, 248, 0.15) !important;
+}
+.recharts-polar-grid-concentric path {
+  stroke: rgba(56, 189, 248, 0.1) !important;
+}
+.recharts-polar-angle-axis-tick-value {
+  fill: #94a3b8 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+}
