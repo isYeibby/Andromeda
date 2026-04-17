@@ -15,16 +15,16 @@ export default {
           mid: '#1e293b',
           soft: '#334155',
         },
-        // === NEON ACCENTS ===
+        // === NEON ACCENTS (0% green / 0% amber) ===
         accent: {
           fuchsia: '#d946ef',
           cyan: '#38bdf8',
           red: '#f43f5e',
-          amber: '#f59e0b',
+          rose: '#e11d48',
         },
-        // === LIGHT MODE (NERV CLINICAL) ===
+        // === LIGHT MODE (NERV / LABORATORY) ===
         nerv: {
-          bg: '#f8fafc',
+          bg: '#f1f5f9',
           surface: '#e2e8f0',
           border: '#cbd5e1',
           text: '#0f172a',
@@ -93,6 +93,7 @@ export default {
         'neon-fuchsia': '0 0 10px rgba(217, 70, 239, 0.3), 0 0 40px rgba(217, 70, 239, 0.1)',
         'neon-cyan': '0 0 10px rgba(56, 189, 248, 0.3), 0 0 40px rgba(56, 189, 248, 0.1)',
         'neon-red': '0 0 10px rgba(244, 63, 94, 0.3), 0 0 40px rgba(244, 63, 94, 0.1)',
+        'neon-rose': '0 0 10px rgba(225, 29, 72, 0.3), 0 0 40px rgba(225, 29, 72, 0.1)',
       },
     },
   },

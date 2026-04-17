@@ -83,7 +83,7 @@ export default function CallbackHandler() {
       <div className="flex flex-col items-center gap-4">
         <div className="w-8 h-8 border-2 border-accent-fuchsia border-t-transparent rounded-full animate-spin" />
         <span className="text-sm font-mono text-slate-400 tracking-wider animate-pulse">
-          ESTABLISHING NEURAL LINK...
+          ESTABLISHING ANDROMEDA LINK...
         </span>
       </div>
     </div>

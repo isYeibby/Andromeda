@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
 import AudioRadar from '../components/charts/AudioRadar';
+import AudioScatter from '../components/charts/AudioScatter';
 
 export default function Radar() {
   const { getTopItems, getAudioFeatures } = useSpotify();
   const [topTrack, setTopTrack] = useState(null);
   const [topTenAvg, setTopTenAvg] = useState(null);
   const [topTrackInfo, setTopTrackInfo] = useState(null);
+  const [scatterData, setScatterData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -30,19 +32,25 @@ export default function Radar() {
           const audioFeatures = features.audio_features?.filter(Boolean) || [];
 
           if (audioFeatures.length > 0) {
-            // Top 1 features
             setTopTrack(audioFeatures[0]);
 
-            // Top 10 average
             const avg = {};
             const keys = ['danceability', 'energy', 'valence', 'acousticness', 'instrumentalness', 'speechiness'];
             keys.forEach(k => {
               avg[k] = audioFeatures.reduce((sum, f) => sum + (f[k] || 0), 0) / audioFeatures.length;
             });
             setTopTenAvg(avg);
+
+            // Build scatter data: valence vs energy
+            const scatter = audioFeatures.map((f, i) => ({
+              valence: f.valence || 0,
+              energy: f.energy || 0,
+              name: items[i]?.name || 'Unknown',
+              artist: items[i]?.artists?.map(a => a.name).join(', ') || '',
+            }));
+            setScatterData(scatter);
           }
         } catch {
-          // Audio Features might be deprecated for new apps
           setError('Audio Features API unavailable — your app may need legacy access.');
         }
       } catch (err) {
@@ -60,15 +68,15 @@ export default function Radar() {
       <div className="flex items-center gap-2 mb-8">
         <span className="w-1.5 h-1.5 bg-accent-cyan" />
         <h1 className="text-[11px] font-mono text-slate-400 tracking-[0.2em]">
-          RADAR // AUDIO FREQUENCY ANALYSIS
+          ANALYSIS // AUDIO FREQUENCY RADAR
         </h1>
       </div>
 
       {error && (
-        <div className="fui-panel clip-angular p-4 mb-6 border-accent-amber/30">
+        <div className="fui-panel clip-angular p-4 mb-6 border-accent-rose/30">
           <div className="flex items-center gap-2">
-            <span className="text-accent-amber text-sm">⚠</span>
-            <span className="text-sm font-mono text-accent-amber">{error}</span>
+            <span className="text-accent-rose text-sm">⚠</span>
+            <span className="text-sm font-mono text-accent-rose">{error}</span>
           </div>
         </div>
       )}
@@ -92,7 +100,6 @@ export default function Radar() {
             </div>
           ) : topTrackInfo ? (
             <div>
-              {/* Album Art & Title */}
               <div className="flex items-start gap-4 mb-6">
                 {topTrackInfo.album?.images?.[0]?.url && (
                   <img
@@ -115,35 +122,28 @@ export default function Radar() {
                 </div>
               </div>
 
-              {/* Feature Breakdown */}
               {topTrack && (
                 <div className="space-y-3">
                   <div className="h-[1px] bg-gradient-to-r from-accent-fuchsia/20 to-transparent mb-4" />
                   {[
-                    { key: 'danceability', label: 'DANCEABILITY', color: 'fuchsia' },
-                    { key: 'energy', label: 'ENERGY', color: 'red' },
-                    { key: 'valence', label: 'VALENCE', color: 'cyan' },
-                    { key: 'acousticness', label: 'ACOUSTICNESS', color: 'amber' },
-                    { key: 'instrumentalness', label: 'INSTRUMENTALNESS', color: 'cyan' },
-                    { key: 'speechiness', label: 'SPEECHINESS', color: 'fuchsia' },
+                    { key: 'danceability', label: 'DANCEABILITY', color: '#d946ef' },
+                    { key: 'energy', label: 'ENERGY', color: '#f43f5e' },
+                    { key: 'valence', label: 'VALENCE', color: '#38bdf8' },
+                    { key: 'acousticness', label: 'ACOUSTICNESS', color: '#e11d48' },
+                    { key: 'instrumentalness', label: 'INSTRUMENTALNESS', color: '#38bdf8' },
+                    { key: 'speechiness', label: 'SPEECHINESS', color: '#d946ef' },
                   ].map(({ key, label, color }) => (
                     <div key={key}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[9px] font-mono text-slate-500 tracking-widest">{label}</span>
-                        <span className={`text-[11px] font-mono text-accent-${color} font-bold`}>
+                        <span className="text-[11px] font-mono font-bold" style={{ color }}>
                           {((topTrack[key] || 0) * 100).toFixed(0)}%
                         </span>
                       </div>
                       <div className="h-[3px] bg-slate-mid rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-1000 ease-out"
-                          style={{
-                            width: `${(topTrack[key] || 0) * 100}%`,
-                            background: color === 'fuchsia' ? '#d946ef'
-                              : color === 'cyan' ? '#38bdf8'
-                              : color === 'red' ? '#f43f5e'
-                              : '#f59e0b',
-                          }}
+                          style={{ width: `${(topTrack[key] || 0) * 100}%`, background: color }}
                         />
                       </div>
                     </div>
@@ -159,19 +159,24 @@ export default function Radar() {
         </div>
       </div>
 
+      {/* Scatter Chart — NEW */}
+      <div className="mt-6">
+        <AudioScatter scatterData={scatterData} loading={loading} />
+      </div>
+
       {/* Legend */}
       <div className="mt-6 fui-panel clip-angular-sm p-4">
         <div className="flex flex-wrap gap-6 text-[10px] font-mono text-slate-500">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-[2px] bg-accent-fuchsia" />
+            <div className="w-3 h-[2px] bg-accent-cyan" />
             <span>TOP 1 — Your most played track</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-[2px] bg-accent-cyan" />
+            <div className="w-3 h-[2px] bg-accent-fuchsia" />
             <span>TOP 10 AVG — Average of your top 10 tracks</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-accent-amber">⚡</span>
+            <span className="text-accent-rose">⚡</span>
             <span>Higher values = more of that characteristic</span>
           </div>
         </div>

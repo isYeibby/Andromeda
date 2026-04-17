@@ -77,23 +77,23 @@ export default function Airlock() {
         {/* Title with glitch */}
         <h1
           className="font-display font-black text-6xl sm:text-8xl tracking-tighter mb-2 glitch-text"
-          data-text="VIBE_SYNC"
+          data-text="ANDROMEDA"
         >
-          <span className="text-white">VIBE</span>
+          <span className="text-white">ANDRO</span>
           <span className="text-accent-fuchsia text-glow-fuchsia">_</span>
-          <span className="text-white">SYNC</span>
+          <span className="text-white">MEDA</span>
         </h1>
 
         {/* Version tag */}
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-accent-fuchsia/50" />
-          <span className="text-[10px] font-mono text-accent-fuchsia/60 tracking-[0.2em]">v1.0.0 // BUILD 2026</span>
+          <span className="text-[10px] font-mono text-accent-fuchsia/60 tracking-[0.2em]">ANDROMEDA // OS v2.0</span>
           <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-accent-fuchsia/50" />
         </div>
 
         {/* Tagline */}
         <p className="text-sm sm:text-base font-mono text-slate-400 mb-12 tracking-wide">
-          <span className="text-accent-cyan">&gt;&gt;</span> NEURAL LINK TO YOUR SOUND SYSTEM
+          <span className="text-accent-cyan">&gt;&gt;</span> DEEP-SPACE TELEMETRY FOR YOUR SOUND SYSTEM
         </p>
 
         {/* Connect button */}

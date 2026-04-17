@@ -24,7 +24,7 @@ export function usePlayer() {
       if (!token || !window.Spotify) return;
 
       const player = new window.Spotify.Player({
-        name: 'VIBE_SYNC // Neural Interface',
+        name: 'ANDROMEDA // Neural Interface',
         getOAuthToken: async (cb) => {
           const t = await getValidToken();
           cb(t);

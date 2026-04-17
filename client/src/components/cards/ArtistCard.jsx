@@ -15,7 +15,7 @@ export default function ArtistCard({ artist, rank }) {
         </div>
       )}
 
-      {/* Artist Image (hexagonal frame) */}
+      {/* Artist Image */}
       <div className="relative">
         {img ? (
           <img

@@ -3,11 +3,12 @@
 @tailwind utilities;
 
 /* =============================================
-   VIBE_SYNC — Design System
+   ANDROMEDA // OS — Design System
    Hypergryph FUI / NeoTokyo 90s Aesthetic
    ============================================= */
 
 @layer base {
+  /* === DARK MODE (HUD Espacial) === */
   :root {
     --color-bg: #020617;
     --color-surface: #0f172a;
@@ -17,15 +18,49 @@
     --color-fuchsia: #d946ef;
     --color-cyan: #38bdf8;
     --color-red: #f43f5e;
-    --color-amber: #f59e0b;
+    --color-rose: #e11d48;
   }
 
+  /* === LIGHT MODE (Laboratorio / NERV) === */
   .light {
-    --color-bg: #f8fafc;
+    --color-bg: #f1f5f9;
     --color-surface: #e2e8f0;
     --color-border: #cbd5e1;
     --color-text: #0f172a;
     --color-text-muted: #64748b;
+  }
+
+  .light body,
+  .light .bg-slate-deep {
+    background: var(--color-bg) !important;
+    color: var(--color-text) !important;
+  }
+
+  .light .fui-panel {
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.9), rgba(241, 245, 249, 0.95)) !important;
+    border-color: rgba(203, 213, 225, 0.5) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .light .text-white {
+    color: #0f172a !important;
+  }
+
+  .light .text-slate-400,
+  .light .text-slate-500 {
+    color: #64748b !important;
+  }
+
+  .light .text-slate-600 {
+    color: #475569 !important;
+  }
+
+  .light .text-slate-700 {
+    color: #334155 !important;
+  }
+
+  .light .bg-slate-mid {
+    background: #cbd5e1 !important;
   }
 
   * {
@@ -120,6 +155,11 @@
                  0 0 30px rgba(244, 63, 94, 0.2);
   }
 
+  .text-glow-rose {
+    text-shadow: 0 0 10px rgba(225, 29, 72, 0.5),
+                 0 0 30px rgba(225, 29, 72, 0.2);
+  }
+
   /* === FUI BORDER FRAME === */
   .fui-border {
     border: 1px solid rgba(56, 189, 248, 0.2);
@@ -196,7 +236,7 @@
     clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
   }
 
-  /* === PROGRESS BAR === */
+  /* === PROGRESS BAR (base) === */
   .progress-bar {
     appearance: none;
     height: 4px;
@@ -222,6 +262,90 @@
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   }
 
+  /* === SEGMENTED PROGRESS BAR (player) === */
+  .progress-segmented {
+    appearance: none;
+    height: 6px;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(56, 189, 248, 0.12) 0px,
+      rgba(56, 189, 248, 0.12) 4px,
+      transparent 4px,
+      transparent 6px
+    );
+    border: none;
+    cursor: pointer;
+    outline: none;
+  }
+  .progress-segmented::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--color-fuchsia);
+    cursor: pointer;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    box-shadow: 0 0 8px rgba(217, 70, 239, 0.5);
+  }
+  .progress-segmented::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: var(--color-fuchsia);
+    cursor: pointer;
+    border: none;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  /* === PARAMETRIC RANGE SLIDER === */
+  .range-parametric {
+    appearance: none;
+    height: 6px;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), rgba(217, 70, 239, 0.15));
+    border: none;
+    cursor: pointer;
+    outline: none;
+    border-radius: 0;
+  }
+  .range-parametric::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, var(--color-cyan), var(--color-fuchsia));
+    cursor: pointer;
+    clip-path: polygon(
+      0 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% 100%,
+      4px 100%,
+      0 calc(100% - 4px)
+    );
+    box-shadow: 0 0 12px rgba(217, 70, 239, 0.4);
+  }
+  .range-parametric::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, var(--color-cyan), var(--color-fuchsia));
+    cursor: pointer;
+    border: none;
+    clip-path: polygon(
+      0 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% 100%,
+      4px 100%,
+      0 calc(100% - 4px)
+    );
+  }
+  .range-parametric::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 0;
+  }
+  .range-parametric::-moz-range-track {
+    height: 6px;
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), rgba(217, 70, 239, 0.15));
+  }
+
   /* === BUTTON VARIANTS === */
   .btn-neon {
     @apply relative overflow-hidden font-mono text-sm tracking-widest uppercase
@@ -243,6 +367,56 @@
     transition: left 0.5s;
   }
   .btn-neon:hover::after {
+    left: 100%;
+  }
+
+  .btn-massive {
+    @apply relative overflow-hidden font-mono text-sm tracking-[0.2em] uppercase
+           px-8 py-3 transition-all duration-300 font-bold;
+    background: linear-gradient(135deg, rgba(225, 29, 72, 0.2), rgba(244, 63, 94, 0.15));
+    border: 2px solid rgba(225, 29, 72, 0.5);
+  }
+  .btn-massive:hover {
+    background: linear-gradient(135deg, rgba(225, 29, 72, 0.4), rgba(244, 63, 94, 0.3));
+    border-color: rgba(225, 29, 72, 0.8);
+    box-shadow: 0 0 25px rgba(225, 29, 72, 0.3), 0 0 60px rgba(225, 29, 72, 0.1);
+  }
+  .btn-massive::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transition: left 0.5s;
+  }
+  .btn-massive:hover::after {
+    left: 100%;
+  }
+
+  .btn-extract {
+    @apply relative overflow-hidden font-mono text-base tracking-[0.15em] uppercase
+           px-10 py-4 transition-all duration-300 font-bold;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(217, 70, 239, 0.2));
+    border: 2px solid rgba(56, 189, 248, 0.4);
+  }
+  .btn-extract:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(217, 70, 239, 0.35));
+    border-color: rgba(56, 189, 248, 0.8);
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.3), 0 0 80px rgba(217, 70, 239, 0.15);
+  }
+  .btn-extract:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-extract::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transition: left 0.5s;
+  }
+  .btn-extract:hover::after {
     left: 100%;
   }
 
