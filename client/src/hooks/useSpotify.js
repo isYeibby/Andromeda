@@ -64,9 +64,6 @@ export function useSpotify() {
     getRecentlyPlayed: (limit = 20) =>
       apiFetch(`/me/player/recently-played?limit=${limit}`),
 
-    getAudioFeatures: (ids) =>
-      apiFetch(`/audio-features?ids=${ids.join(',')}`),
-
     playTrack: (deviceId, uris) =>
       apiFetch(`/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',

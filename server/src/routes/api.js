@@ -67,9 +67,6 @@ apiRouter.get('/me/top/:type', (req, res, next) => {
 // === Recently Played ===
 apiRouter.get('/me/player/recently-played', proxyGet('/me/player/recently-played'));
 
-// === Audio Features (batch) ===
-apiRouter.get('/audio-features', proxyGet('/audio-features'));
-
 // === Playback State ===
 apiRouter.get('/me/player', proxyGet('/me/player'));
 

@@ -3,56 +3,161 @@ import { useSpotify } from '../hooks/useSpotify';
 import AudioRadar from '../components/charts/AudioRadar';
 import AudioScatter from '../components/charts/AudioScatter';
 
+function formatDuration(ms) {
+  const min = Math.floor(ms / 60000);
+  const sec = Math.floor((ms % 60000) / 1000);
+  return `${min}:${sec.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Extracts top N genres from an array of artist objects and returns
+ * a percentage-based distribution (how much each genre appears).
+ */
+function extractGenreDistribution(artists, topN = 6) {
+  const genreCount = {};
+  let totalGenres = 0;
+  artists.forEach(artist => {
+    (artist.genres || []).forEach(genre => {
+      genreCount[genre] = (genreCount[genre] || 0) + 1;
+      totalGenres++;
+    });
+  });
+
+  if (totalGenres === 0) return [];
+
+  return Object.entries(genreCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topN)
+    .map(([genre, count]) => ({
+      genre: genre.toUpperCase().replace(/-/g, ' ').slice(0, 14),
+      fullGenre: genre,
+      percentage: (count / totalGenres) * 100,
+    }));
+}
+
+/**
+ * Computes summary stats from track objects without Audio Features API.
+ */
+function computeTrackStats(tracks) {
+  if (!tracks.length) return null;
+
+  const popularities = tracks.map(t => t.popularity || 0);
+  const durations = tracks.map(t => t.duration_ms || 0);
+  const explicits = tracks.filter(t => t.explicit);
+
+  const avgPopularity = popularities.reduce((a, b) => a + b, 0) / tracks.length;
+  const maxPopularity = Math.max(...popularities);
+  const minPopularity = Math.min(...popularities);
+  const avgDuration = durations.reduce((a, b) => a + b, 0) / tracks.length;
+  const totalDuration = durations.reduce((a, b) => a + b, 0);
+
+  // Decade distribution
+  const decades = {};
+  tracks.forEach(t => {
+    const year = parseInt(t.album?.release_date?.split('-')[0]);
+    if (year) {
+      const decade = `${Math.floor(year / 10) * 10}s`;
+      decades[decade] = (decades[decade] || 0) + 1;
+    }
+  });
+
+  // Unique artists count
+  const artistSet = new Set();
+  tracks.forEach(t => (t.artists || []).forEach(a => artistSet.add(a.id)));
+
+  return {
+    avgPopularity: Math.round(avgPopularity),
+    maxPopularity,
+    minPopularity,
+    avgDurationMs: avgDuration,
+    totalDurationMs: totalDuration,
+    explicitCount: explicits.length,
+    explicitPercent: Math.round((explicits.length / tracks.length) * 100),
+    uniqueArtists: artistSet.size,
+    decades: Object.entries(decades).sort((a, b) => a[0].localeCompare(b[0])),
+    trackCount: tracks.length,
+  };
+}
+
 export default function Radar() {
-  const { getTopItems, getAudioFeatures } = useSpotify();
-  const [topTrack, setTopTrack] = useState(null);
-  const [topTenAvg, setTopTenAvg] = useState(null);
+  const { getTopItems } = useSpotify();
   const [topTrackInfo, setTopTrackInfo] = useState(null);
-  const [scatterData, setScatterData] = useState([]);
+  const [trackStats, setTrackStats] = useState(null);
+  const [genreRadarData, setGenreRadarData] = useState([]);
+  const [popularityChartData, setPopularityChartData] = useState([]);
+  const [topGenres, setTopGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const tracks = await getTopItems('tracks', 'medium_term', 10);
-        const items = tracks.items || [];
+        // Fetch all data in parallel — no Audio Features needed
+        const [
+          tracksShort, tracksMedium, tracksLong,
+          artistsShort, artistsMedium, artistsLong,
+        ] = await Promise.all([
+          getTopItems('tracks', 'short_term', 20),
+          getTopItems('tracks', 'medium_term', 20),
+          getTopItems('tracks', 'long_term', 20),
+          getTopItems('artists', 'short_term', 20),
+          getTopItems('artists', 'medium_term', 20),
+          getTopItems('artists', 'long_term', 20),
+        ]);
 
-        if (items.length === 0) {
-          setError('No top tracks available yet. Listen to more music!');
+        const mediumTracks = tracksMedium.items || [];
+        const mediumArtists = artistsMedium.items || [];
+
+        if (mediumTracks.length === 0) {
+          setError('No hay suficientes datos todavía. ¡Escucha más música!');
           setLoading(false);
           return;
         }
 
-        setTopTrackInfo(items[0]);
-        const ids = items.map(t => t.id);
+        // Top track info
+        setTopTrackInfo(mediumTracks[0]);
 
-        try {
-          const features = await getAudioFeatures(ids);
-          const audioFeatures = features.audio_features?.filter(Boolean) || [];
+        // Track stats from medium term
+        setTrackStats(computeTrackStats(mediumTracks));
 
-          if (audioFeatures.length > 0) {
-            setTopTrack(audioFeatures[0]);
+        // Build genre radar data — comparing genres across time ranges
+        const shortGenres = extractGenreDistribution(artistsShort.items || [], 8);
+        const mediumGenres = extractGenreDistribution(mediumArtists, 8);
+        const longGenres = extractGenreDistribution(artistsLong.items || [], 8);
 
-            const avg = {};
-            const keys = ['danceability', 'energy', 'valence', 'acousticness', 'instrumentalness', 'speechiness'];
-            keys.forEach(k => {
-              avg[k] = audioFeatures.reduce((sum, f) => sum + (f[k] || 0), 0) / audioFeatures.length;
-            });
-            setTopTenAvg(avg);
+        // Combine all unique genres (top 6 overall)
+        const allGenres = new Set([
+          ...shortGenres.map(g => g.fullGenre),
+          ...mediumGenres.map(g => g.fullGenre),
+          ...longGenres.map(g => g.fullGenre),
+        ]);
 
-            // Build scatter data: valence vs energy
-            const scatter = audioFeatures.map((f, i) => ({
-              valence: f.valence || 0,
-              energy: f.energy || 0,
-              name: items[i]?.name || 'Unknown',
-              artist: items[i]?.artists?.map(a => a.name).join(', ') || '',
-            }));
-            setScatterData(scatter);
-          }
-        } catch {
-          setError('Audio Features API unavailable — your app may need legacy access.');
-        }
+        const radarData = [...allGenres].slice(0, 6).map(genre => {
+          const short = shortGenres.find(g => g.fullGenre === genre);
+          const medium = mediumGenres.find(g => g.fullGenre === genre);
+          const long = longGenres.find(g => g.fullGenre === genre);
+          return {
+            genre: genre.toUpperCase().replace(/-/g, ' ').slice(0, 14),
+            short_term: short?.percentage || 0,
+            medium_term: medium?.percentage || 0,
+            long_term: long?.percentage || 0,
+          };
+        });
+        setGenreRadarData(radarData);
+
+        // Top genres list (medium term)
+        setTopGenres(mediumGenres.slice(0, 6));
+
+        // Build popularity bar chart from medium term tracks
+        const chartData = mediumTracks.slice(0, 10).map((t, i) => ({
+          label: `#${i + 1}`,
+          name: t.name,
+          artist: t.artists?.map(a => a.name).join(', ') || '',
+          popularity: t.popularity || 0,
+          duration: formatDuration(t.duration_ms),
+        }));
+        setPopularityChartData(chartData);
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -68,7 +173,7 @@ export default function Radar() {
       <div className="flex items-center gap-2 mb-8">
         <span className="w-1.5 h-1.5 bg-accent-cyan" />
         <h1 className="text-[11px] font-mono text-slate-400 tracking-[0.2em]">
-          ANALYSIS // AUDIO FREQUENCY RADAR
+          ANALYSIS // LISTENING INTELLIGENCE
         </h1>
       </div>
 
@@ -82,14 +187,14 @@ export default function Radar() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Radar Chart */}
-        <AudioRadar topTrack={topTrack} topTenAvg={topTenAvg} loading={loading} />
+        {/* Genre Radar Chart */}
+        <AudioRadar genreRadarData={genreRadarData} loading={loading} />
 
         {/* Track Details Panel */}
         <div className="fui-panel clip-angular p-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-1.5 h-1.5 bg-accent-fuchsia" />
-            <span className="text-[10px] font-mono text-slate-400 tracking-[0.2em]">TOP 1 // SIGNAL DETAILS</span>
+            <span className="text-[10px] font-mono text-slate-400 tracking-[0.2em]">TOP 1 // SIGNAL PROFILE</span>
           </div>
 
           {loading ? (
@@ -122,34 +227,31 @@ export default function Radar() {
                 </div>
               </div>
 
-              {topTrack && (
-                <div className="space-y-3">
-                  <div className="h-[1px] bg-gradient-to-r from-accent-fuchsia/20 to-transparent mb-4" />
-                  {[
-                    { key: 'danceability', label: 'DANCEABILITY', color: '#d946ef' },
-                    { key: 'energy', label: 'ENERGY', color: '#f43f5e' },
-                    { key: 'valence', label: 'VALENCE', color: '#38bdf8' },
-                    { key: 'acousticness', label: 'ACOUSTICNESS', color: '#e11d48' },
-                    { key: 'instrumentalness', label: 'INSTRUMENTALNESS', color: '#38bdf8' },
-                    { key: 'speechiness', label: 'SPEECHINESS', color: '#d946ef' },
-                  ].map(({ key, label, color }) => (
-                    <div key={key}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-mono text-slate-500 tracking-widest">{label}</span>
-                        <span className="text-[11px] font-mono font-bold" style={{ color }}>
-                          {((topTrack[key] || 0) * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="h-[3px] bg-slate-mid rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-1000 ease-out"
-                          style={{ width: `${(topTrack[key] || 0) * 100}%`, background: color }}
-                        />
-                      </div>
+              {/* Track Metrics — from track object (no Audio Features API) */}
+              <div className="space-y-3">
+                <div className="h-[1px] bg-gradient-to-r from-accent-fuchsia/20 to-transparent mb-4" />
+                {[
+                  { key: 'popularity', label: 'POPULARITY', value: topTrackInfo.popularity || 0, max: 100, color: '#f43f5e' },
+                  { key: 'duration', label: 'DURATION', value: topTrackInfo.duration_ms ? Math.min((topTrackInfo.duration_ms / 600000) * 100, 100) : 0, max: 100, color: '#38bdf8', display: formatDuration(topTrackInfo.duration_ms || 0) },
+                  { key: 'explicit', label: 'EXPLICIT', value: topTrackInfo.explicit ? 100 : 0, max: 100, color: '#d946ef', display: topTrackInfo.explicit ? 'YES' : 'NO' },
+                  { key: 'disc', label: 'DISC / TRACK', value: ((topTrackInfo.track_number || 1) / 20) * 100, max: 100, color: '#e11d48', display: `${topTrackInfo.disc_number || 1} / ${topTrackInfo.track_number || '—'}` },
+                ].map(({ label, value, color, display }) => (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-mono text-slate-500 tracking-widest">{label}</span>
+                      <span className="text-[11px] font-mono font-bold" style={{ color }}>
+                        {display || `${Math.round(value)}%`}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="h-[3px] bg-slate-mid rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${value}%`, background: color }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-48">
@@ -159,9 +261,90 @@ export default function Radar() {
         </div>
       </div>
 
-      {/* Scatter Chart — NEW */}
+      {/* Popularity Bar Chart */}
       <div className="mt-6">
-        <AudioScatter scatterData={scatterData} loading={loading} />
+        <AudioScatter chartData={popularityChartData} loading={loading} />
+      </div>
+
+      {/* Stats Grid */}
+      {trackStats && (
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { label: 'AVG POPULARITY', value: `${trackStats.avgPopularity}%`, color: 'text-accent-cyan' },
+            { label: 'UNIQUE ARTISTS', value: trackStats.uniqueArtists, color: 'text-accent-fuchsia' },
+            { label: 'EXPLICIT', value: `${trackStats.explicitPercent}%`, color: 'text-accent-rose' },
+            { label: 'AVG DURATION', value: formatDuration(trackStats.avgDurationMs), color: 'text-accent-cyan' },
+            { label: 'TOTAL TIME', value: `${Math.round(trackStats.totalDurationMs / 60000)}m`, color: 'text-accent-fuchsia' },
+            { label: 'POP RANGE', value: `${trackStats.minPopularity}–${trackStats.maxPopularity}`, color: 'text-accent-rose' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="fui-panel clip-angular-sm p-3 text-center">
+              <span className="text-[9px] font-mono text-slate-500 tracking-widest block mb-1">{label}</span>
+              <span className={`text-lg font-display font-bold ${color}`}>{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Decade Distribution + Top Genres */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Decade Distribution */}
+        {trackStats?.decades?.length > 0 && (
+          <div className="fui-panel clip-angular p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-1.5 h-1.5 bg-accent-cyan" />
+              <span className="text-[10px] font-mono text-slate-400 tracking-[0.2em]">DECADE DISTRIBUTION</span>
+            </div>
+            <div className="space-y-2">
+              {trackStats.decades.map(([decade, count]) => {
+                const pct = (count / trackStats.trackCount) * 100;
+                return (
+                  <div key={decade}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-mono text-slate-400 tracking-wider">{decade}</span>
+                      <span className="text-[10px] font-mono text-accent-cyan font-bold">{count} tracks ({Math.round(pct)}%)</span>
+                    </div>
+                    <div className="h-[4px] bg-slate-mid rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-accent-cyan to-accent-fuchsia"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Top Genres */}
+        {topGenres.length > 0 && (
+          <div className="fui-panel clip-angular p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-1.5 h-1.5 bg-accent-fuchsia" />
+              <span className="text-[10px] font-mono text-slate-400 tracking-[0.2em]">TOP GENRES // 6 MONTHS</span>
+            </div>
+            <div className="space-y-2">
+              {topGenres.map((g, i) => {
+                const colors = ['#f43f5e', '#d946ef', '#38bdf8', '#e11d48', '#d946ef', '#38bdf8'];
+                const color = colors[i % colors.length];
+                return (
+                  <div key={g.fullGenre}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-mono text-slate-400 tracking-wider">{g.genre}</span>
+                      <span className="text-[10px] font-mono font-bold" style={{ color }}>{g.percentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-[4px] bg-slate-mid rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${g.percentage}%`, background: color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Legend */}
@@ -169,15 +352,15 @@ export default function Radar() {
         <div className="flex flex-wrap gap-6 text-[10px] font-mono text-slate-500">
           <div className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-accent-cyan" />
-            <span>TOP 1 — Your most played track</span>
+            <span>POPULARITY — Spotify popularity index (0-100)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-accent-fuchsia" />
-            <span>TOP 10 AVG — Average of your top 10 tracks</span>
+            <span>GENRES — Extracted from your top artists</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-accent-rose">⚡</span>
-            <span>Higher values = more of that characteristic</span>
+            <span>Based on your listening data across 3 time ranges</span>
           </div>
         </div>
       </div>
