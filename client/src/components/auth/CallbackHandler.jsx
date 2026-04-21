@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -9,9 +9,13 @@ export default function CallbackHandler() {
   const navigate = useNavigate();
   const { setTokens } = useAuthStore();
   const [error, setError] = useState(null);
+  const isProcessing = useRef(false);
 
   useEffect(() => {
+    if (isProcessing.current) return;
+
     const handleCallback = async () => {
+      isProcessing.current = true;
       const code = searchParams.get('code');
       const authError = searchParams.get('error');
 
