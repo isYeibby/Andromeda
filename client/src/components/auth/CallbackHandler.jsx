@@ -25,7 +25,7 @@ export default function CallbackHandler() {
         return;
       }
 
-      const codeVerifier = sessionStorage.getItem('vs_code_verifier');
+      const codeVerifier = localStorage.getItem('vs_code_verifier');
       if (!codeVerifier) {
         setError('PKCE verification failed — code_verifier not found');
         return;
@@ -49,7 +49,7 @@ export default function CallbackHandler() {
 
         const tokens = await res.json();
         setTokens(tokens);
-        sessionStorage.removeItem('vs_code_verifier');
+        localStorage.removeItem('vs_code_verifier');
         navigate('/dashboard', { replace: true });
       } catch (err) {
         setError(err.message);

@@ -131,7 +131,7 @@ export const useAuthStore = create((set, get) => ({
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
     // Store verifier for callback
-    sessionStorage.setItem('vs_code_verifier', codeVerifier);
+    localStorage.setItem('vs_code_verifier', codeVerifier);
 
     const params = new URLSearchParams({
       client_id: clientId,
