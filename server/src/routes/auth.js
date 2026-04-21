@@ -42,19 +42,32 @@ authRouter.post('/token', async (req, res, next) => {
       code_verifier,
     });
 
-    const response = await fetch(SPOTIFY_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
+    let response;
+    try {
+      response = await fetch(SPOTIFY_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+    } catch (fetchErr) {
+      console.error('[AUTH] Network error fetching Spotify token:', fetchErr.message);
+      return res.status(502).json({ error: 'Failed to connect to Spotify API', details: fetchErr.message });
+    }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseErr) {
+      console.error('[AUTH] Failed to parse Spotify token response:', parseErr.message);
+      return res.status(502).json({ error: 'Invalid response from Spotify API', details: parseErr.message });
+    }
 
     if (!response.ok) {
       console.error('[AUTH] Token exchange failed:', data);
       return res.status(response.status).json({
         error: data.error_description || data.error || 'Token exchange failed',
         code: 'TOKEN_EXCHANGE_FAILED',
+        details: data,
       });
     }
 

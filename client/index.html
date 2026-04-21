@@ -13,7 +13,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
+    <!-- Avoid favicon 404 -->
+    <link rel="icon" href="data:," />
+
     <!-- Spotify Web Playback SDK -->
+    <script>window.onSpotifyWebPlaybackSDKReady = () => {};</script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
   </head>
   <body class="bg-slate-deep text-white font-mono antialiased">
