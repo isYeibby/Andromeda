@@ -30,7 +30,11 @@ export default function SpotifyPlayer() {
   // Auto-transfer playback to this device when ready
   useEffect(() => {
     if (isReady && deviceId) {
-      transferPlayback(deviceId, false).catch(() => {});
+      // Delay to ensure Spotify backend registers the Web Playback SDK device first
+      const timeout = setTimeout(() => {
+        transferPlayback(deviceId, false).catch(() => {});
+      }, 1000);
+      return () => clearTimeout(timeout);
     }
   }, [isReady, deviceId]);
 

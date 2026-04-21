@@ -64,6 +64,12 @@ apiRouter.get('/me/top/:type', (req, res, next) => {
   return proxyGet(`/me/top/${type}`)(req, res, next);
 });
 
+// === Multiple Artists ===
+apiRouter.get('/artists', proxyGet('/artists'));
+
+// === Audio Features ===
+apiRouter.get('/audio-features', proxyGet('/audio-features'));
+
 // === Recently Played ===
 apiRouter.get('/me/player/recently-played', proxyGet('/me/player/recently-played'));
 

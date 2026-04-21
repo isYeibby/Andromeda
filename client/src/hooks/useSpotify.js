@@ -61,6 +61,12 @@ export function useSpotify() {
     getTopItems: (type = 'tracks', timeRange = 'medium_term', limit = 20) =>
       apiFetch(`/me/top/${type}?time_range=${timeRange}&limit=${limit}`),
 
+    getArtists: (ids) =>
+      apiFetch(`/artists?ids=${ids.join(',')}`),
+
+    getAudioFeatures: (ids) =>
+      apiFetch(`/audio-features?ids=${ids.join(',')}`),
+
     getRecentlyPlayed: (limit = 20) =>
       apiFetch(`/me/player/recently-played?limit=${limit}`),
 

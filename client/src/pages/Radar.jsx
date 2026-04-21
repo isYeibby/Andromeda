@@ -80,7 +80,7 @@ function computeTrackStats(tracks) {
 }
 
 export default function Radar() {
-  const { getTopItems } = useSpotify();
+  const { getTopItems, getArtists, getAudioFeatures } = useSpotify();
   const [topTrackInfo, setTopTrackInfo] = useState(null);
   const [trackStats, setTrackStats] = useState(null);
   const [genreRadarData, setGenreRadarData] = useState([]);
@@ -120,42 +120,86 @@ export default function Radar() {
         // Track stats from medium term
         setTrackStats(computeTrackStats(mediumTracks));
 
-        // Build genre radar data — comparing genres across time ranges
-        const shortGenres = extractGenreDistribution(artistsShort.items || [], 8);
-        const mediumGenres = extractGenreDistribution(mediumArtists, 8);
-        const longGenres = extractGenreDistribution(artistsLong.items || [], 8);
+        // Fetch audio features for all time ranges
+        const shortTracks = tracksShort.items || [];
+        const longTracks = tracksLong.items || [];
+        const allTrackIds = [
+          ...shortTracks.map(t => t.id),
+          ...mediumTracks.map(t => t.id),
+          ...longTracks.map(t => t.id)
+        ].filter(Boolean);
 
-        // Combine all unique genres (top 6 overall)
-        const allGenres = new Set([
-          ...shortGenres.map(g => g.fullGenre),
-          ...mediumGenres.map(g => g.fullGenre),
-          ...longGenres.map(g => g.fullGenre),
-        ]);
+        const uniqueTrackIds = [...new Set(allTrackIds)].slice(0, 100);
+        const afMap = {};
+        
+        if (uniqueTrackIds.length > 0) {
+          try {
+            const afData = await getAudioFeatures(uniqueTrackIds);
+            (afData.audio_features || []).forEach(af => {
+               if (af) afMap[af.id] = af;
+            });
+          } catch (e) {
+            console.error('[RADAR] Failed to fetch Audio Features', e);
+          }
+        }
 
-        const radarData = [...allGenres].slice(0, 6).map(genre => {
-          const short = shortGenres.find(g => g.fullGenre === genre);
-          const medium = mediumGenres.find(g => g.fullGenre === genre);
-          const long = longGenres.find(g => g.fullGenre === genre);
+        const getAverages = (tracksArray) => {
+          const afs = tracksArray.map(t => afMap[t.id]).filter(Boolean);
+          if (!afs.length) return { danceability: 0, energy: 0, valence: 0, acousticness: 0, instrumentalness: 0, liveness: 0 };
+          const avg = (key) => afs.reduce((acc, curr) => acc + (curr[key] || 0), 0) / afs.length * 100;
           return {
-            genre: genre.toUpperCase().replace(/-/g, ' ').slice(0, 14),
-            short_term: short?.percentage || 0,
-            medium_term: medium?.percentage || 0,
-            long_term: long?.percentage || 0,
+            danceability: avg('danceability'),
+            energy: avg('energy'),
+            valence: avg('valence'),
+            acousticness: avg('acousticness'),
+            instrumentalness: avg('instrumentalness'),
+            liveness: avg('liveness'),
           };
-        });
-        setGenreRadarData(radarData);
+        };
 
-        // Top genres list (medium term)
+        const shortAvg = getAverages(shortTracks);
+        const mediumAvg = getAverages(mediumTracks);
+        const longAvg = getAverages(longTracks);
+
+        const audioSignatureData = [
+          { feature: 'DANCEABILITY', short_term: shortAvg.danceability, medium_term: mediumAvg.danceability, long_term: longAvg.danceability },
+          { feature: 'ENERGY', short_term: shortAvg.energy, medium_term: mediumAvg.energy, long_term: longAvg.energy },
+          { feature: 'VALENCE', short_term: shortAvg.valence, medium_term: mediumAvg.valence, long_term: longAvg.valence },
+          { feature: 'ACOUSTIC', short_term: shortAvg.acousticness, medium_term: mediumAvg.acousticness, long_term: longAvg.acousticness },
+          { feature: 'INSTRUMENTAL', short_term: shortAvg.instrumentalness, medium_term: mediumAvg.instrumentalness, long_term: longAvg.instrumentalness },
+          { feature: 'LIVENESS', short_term: shortAvg.liveness, medium_term: mediumAvg.liveness, long_term: longAvg.liveness },
+        ];
+        
+        // Only show radar if we have actual audio features
+        setGenreRadarData(Object.keys(afMap).length > 0 ? audioSignatureData : []);
+
+        // Top genres: we still extract them using real data fallback
+        let mediumGenres = extractGenreDistribution(mediumArtists, 8);
+        if (mediumGenres.length === 0 && mediumTracks.length > 0) {
+          try {
+            const trackArtistIds = [...new Set(mediumTracks.flatMap(t => t.artists?.map(a => a.id) || []))].filter(Boolean).slice(0, 50);
+            if (trackArtistIds.length > 0) {
+              const fetchedData = await getArtists(trackArtistIds);
+              const inferredGenres = extractGenreDistribution(fetchedData.artists || [], 8);
+              if (inferredGenres.length > 0) mediumGenres = inferredGenres;
+            }
+          } catch (err) {
+            console.error('[RADAR] Real-data genre fallback failed:', err);
+          }
+        }
         setTopGenres(mediumGenres.slice(0, 6));
 
-        // Build popularity bar chart from medium term tracks
-        const chartData = mediumTracks.slice(0, 10).map((t, i) => ({
-          label: `#${i + 1}`,
-          name: t.name,
-          artist: t.artists?.map(a => a.name).join(', ') || '',
-          popularity: t.popularity || 0,
-          duration: formatDuration(t.duration_ms),
-        }));
+        // Build Audio Feature bar chart from medium term tracks
+        const chartData = mediumTracks.slice(0, 10).map((t, i) => {
+          const af = afMap[t.id];
+          return {
+            label: `#${i + 1}`,
+            name: t.name,
+            artist: t.artists?.map(a => a.name).join(', ') || '',
+            energy: af ? Math.round(af.energy * 100) : 0,
+            duration: formatDuration(t.duration_ms),
+          };
+        });
         setPopularityChartData(chartData);
 
       } catch (err) {
@@ -186,9 +230,11 @@ export default function Radar() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${genreRadarData.length > 0 ? 'lg:grid-cols-2' : ''} gap-6`}>
         {/* Genre Radar Chart */}
-        <AudioRadar genreRadarData={genreRadarData} loading={loading} />
+        {genreRadarData.length > 0 && (
+          <AudioRadar genreRadarData={genreRadarData} loading={loading} />
+        )}
 
         {/* Track Details Panel */}
         <div className="fui-panel clip-angular p-6">
@@ -231,7 +277,6 @@ export default function Radar() {
               <div className="space-y-3">
                 <div className="h-[1px] bg-gradient-to-r from-accent-fuchsia/20 to-transparent mb-4" />
                 {[
-                  { key: 'popularity', label: 'POPULARITY', value: topTrackInfo.popularity || 0, max: 100, color: '#f43f5e' },
                   { key: 'duration', label: 'DURATION', value: topTrackInfo.duration_ms ? Math.min((topTrackInfo.duration_ms / 600000) * 100, 100) : 0, max: 100, color: '#38bdf8', display: formatDuration(topTrackInfo.duration_ms || 0) },
                   { key: 'explicit', label: 'EXPLICIT', value: topTrackInfo.explicit ? 100 : 0, max: 100, color: '#d946ef', display: topTrackInfo.explicit ? 'YES' : 'NO' },
                   { key: 'disc', label: 'DISC / TRACK', value: ((topTrackInfo.track_number || 1) / 20) * 100, max: 100, color: '#e11d48', display: `${topTrackInfo.disc_number || 1} / ${topTrackInfo.track_number || '—'}` },
@@ -268,14 +313,12 @@ export default function Radar() {
 
       {/* Stats Grid */}
       {trackStats && (
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'AVG POPULARITY', value: `${trackStats.avgPopularity}%`, color: 'text-accent-cyan' },
             { label: 'UNIQUE ARTISTS', value: trackStats.uniqueArtists, color: 'text-accent-fuchsia' },
             { label: 'EXPLICIT', value: `${trackStats.explicitPercent}%`, color: 'text-accent-rose' },
             { label: 'AVG DURATION', value: formatDuration(trackStats.avgDurationMs), color: 'text-accent-cyan' },
             { label: 'TOTAL TIME', value: `${Math.round(trackStats.totalDurationMs / 60000)}m`, color: 'text-accent-fuchsia' },
-            { label: 'POP RANGE', value: `${trackStats.minPopularity}–${trackStats.maxPopularity}`, color: 'text-accent-rose' },
           ].map(({ label, value, color }) => (
             <div key={label} className="fui-panel clip-angular-sm p-3 text-center">
               <span className="text-[9px] font-mono text-slate-500 tracking-widest block mb-1">{label}</span>
@@ -352,15 +395,15 @@ export default function Radar() {
         <div className="flex flex-wrap gap-6 text-[10px] font-mono text-slate-500">
           <div className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-accent-cyan" />
-            <span>POPULARITY — Spotify popularity index (0-100)</span>
+            <span>ENERGY — Intensity and activity measure (0-100)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-accent-fuchsia" />
-            <span>GENRES — Extracted from your top artists</span>
+            <span>AUDIO SIGNATURE — Spotify DSP feature analysis</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-accent-rose">⚡</span>
-            <span>Based on your listening data across 3 time ranges</span>
+            <span>Calculated from your unique listening streams</span>
           </div>
         </div>
       </div>

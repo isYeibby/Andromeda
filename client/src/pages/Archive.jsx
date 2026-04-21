@@ -136,58 +136,6 @@ export default function Archive() {
         </span>
       </div>
 
-      {/* Parametric Slider — Popularity (works without Audio Features) */}
-      {viewType === 'tracks' && (
-        <div className="fui-panel clip-angular p-4 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-1.5 h-1.5 bg-accent-fuchsia" />
-            <span className="text-[10px] font-mono text-slate-400 tracking-[0.2em]">PARAMETRIC FILTER</span>
-          </div>
-
-          <div className="max-w-md">
-            {/* Popularity Slider */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono text-slate-500 tracking-wider">POPULARIDAD MÍNIMA</span>
-                <span className="text-[11px] font-mono text-accent-cyan font-bold">{minPopularity}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={minPopularity}
-                onChange={e => setMinPopularity(Number(e.target.value))}
-                className="range-parametric w-full"
-              />
-              <div className="flex justify-between mt-1">
-                <span className="text-[9px] font-mono text-slate-600">0%</span>
-                <span className="text-[9px] font-mono text-slate-600">100%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Extract to Playlist button */}
-      {viewType === 'tracks' && filteredTracks.length > 0 && (
-        <div className="mb-6 flex justify-center">
-          <button
-            id="extract-playlist-btn"
-            onClick={handleCreatePlaylist}
-            disabled={creating}
-            className="btn-extract clip-angular text-accent-cyan"
-          >
-            {creating ? (
-              <span className="flex items-center gap-3">
-                <div className="w-4 h-4 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin" />
-                GENERATING PLAYLIST...
-              </span>
-            ) : (
-              `[ EXTRACT_TO_PLAYLIST ] — ${filteredTracks.length} TRACKS`
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Content */}
       {loading ? (
