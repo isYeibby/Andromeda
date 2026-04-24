@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const navItems = [
   { path: '/dashboard', label: 'TELEMETRY' },
-  { path: '/radar', label: 'ANALYSIS' },
+  { path: '/radar', label: 'ANALYTICS' },
   { path: '/archive', label: 'DATA_VAULT' },
 ];
 

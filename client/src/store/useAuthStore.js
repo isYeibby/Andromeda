@@ -77,6 +77,7 @@ export const useAuthStore = create((set, get) => ({
   refreshAccessToken: async () => {
     const { refreshToken } = get();
     if (!refreshToken) {
+      console.warn('[AUTH] No refresh token available — logging out');
       get().logout();
       return null;
     }
@@ -89,14 +90,18 @@ export const useAuthStore = create((set, get) => ({
       });
 
       if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('[AUTH] Token refresh failed:', res.status, errData);
         get().logout();
         return null;
       }
 
       const data = await res.json();
       get().setTokens(data);
+      console.log('[AUTH] Token refreshed successfully');
       return data.access_token;
-    } catch {
+    } catch (err) {
+      console.error('[AUTH] Token refresh network error:', err.message);
       get().logout();
       return null;
     }
@@ -130,8 +135,9 @@ export const useAuthStore = create((set, get) => ({
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-    // Store verifier for callback
+    // Store verifier for callback — dual storage for redundancy
     localStorage.setItem('vs_code_verifier', codeVerifier);
+    sessionStorage.setItem('vs_code_verifier', codeVerifier);
 
     const params = new URLSearchParams({
       client_id: clientId,
